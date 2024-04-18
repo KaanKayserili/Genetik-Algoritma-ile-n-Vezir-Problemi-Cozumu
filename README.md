@@ -1,0 +1,1 @@
+# Genetik-Algoritma-ile-n-Vezir-Problemi-Cozumu
