@@ -15,53 +15,53 @@ class Program
         int desiredSolutionsCount = 92; // Bulunması gereken çözüm sayısı. (Tekrara girmemek için)
         int iterasyon = 10000; // İzin verilen maksimum nesil (iterasyon) sayısı
 
-        List<int[]> population = InitializePopulation(n, populationSize);
+        List<int[]> population = InitializePopulation(n, populationSize); //10.000 adet popülasyonu yolluyor.
         List<int[]> solutions = new List<int[]>();
-        int generation = 0;
+        int generation = 0;//iterasyon sayacı
 
         // Çözüm bulma süreci
-        while (solutions.Count < desiredSolutionsCount && generation < iterasyon)
+        while (solutions.Count < desiredSolutionsCount && generation < iterasyon) //iterasyon sayısı 10.000 olana kadar döngüye gir
         {
-            List<int[]> newPopulation = NextGeneration(population, mutationRate, crossoverRate, n);
-            population = newPopulation;
+            List<int[]> newPopulation = NextGeneration(population, mutationRate, crossoverRate, n); //yeni bir nesil oluşturmak için parametreleri gönder
+            population = newPopulation;//dönen diziyi rastele oluşturulan diziye ata
 
             foreach (var individual in population)
             {
-                if (IsSolution(individual, n) && !solutions.Any(sol => sol.SequenceEqual(individual)))
+                if (IsSolution(individual, n) && !solutions.Any(sol => sol.SequenceEqual(individual)))//yeni nesili tehdit eden yoksa ve benzersizse
                 {
-                    solutions.Add(individual);
+                    solutions.Add(individual);//yeni uygun çözümü ekle
                 }
             }
-
-            generation++;
+            generation++;//10.000'e kadar artırıyor
         }
 
         // Çözümlerin yazdırılması
-        if (solutions.Any())
+        if (solutions.Any())//çözüm bulunuyorsa;
         {
             Console.WriteLine($"Toplam {solutions.Count} çözüm bulundu, {generation} nesillerde:");
             foreach (var solution in solutions)
             {
                 Console.WriteLine(" ------------------");
-                PrintBoard(solution);
+                PrintBoard(solution);//düzgün şekilde yazdırmak için metoda git
                 Console.WriteLine(" ------------------");
                 Console.WriteLine();
             }
         }
-        else
+        else//çözüm yoksa;
         {
             Console.WriteLine("Çözüm bulunamadı.");
         }
+        //proje kapanışı
     }
 
     // Popülasyonun ilk başta rastgele oluşturulması
-    static List<int[]> InitializePopulation(int n, int size)
+    static List<int[]> InitializePopulation(int n, int size)//10.000 adet popülasyondan 8x8 tahtaya dizilim yaptırma yeri
     {
         List<int[]> population = new List<int[]>();
         for (int i = 0; i < size; i++)
         {
-            int[] individual = Enumerable.Range(0, n).OrderBy(x => random.Next()).ToArray();
-            population.Add(individual);
+            int[] individual = Enumerable.Range(0, n).OrderBy(x => random.Next()).ToArray();// rastgele yerleştirme
+            population.Add(individual);//
         }
         return population;
     }
@@ -70,12 +70,13 @@ class Program
     static List<int[]> NextGeneration(List<int[]> currentPopulation, double mutationRate, double crossoverRate, int n)
     {
         List<int[]> newPopulation = new List<int[]>();
-        while (newPopulation.Count < currentPopulation.Count)
+        while (newPopulation.Count < currentPopulation.Count)//önceki popülasyon kadar yap
         {
             int[] parent1 = SelectParent(currentPopulation);
             int[] parent2 = SelectParent(currentPopulation);
             int[] child = random.NextDouble() < crossoverRate ? Crossover(parent1, parent2, n) : random.NextDouble() < 0.5 ? parent1 : parent2;
-            Mutate(child, mutationRate);
+            //2 ebevenden 1 yeni nesil çıkar. Çaprazlama oranı ile birlikte.
+            Mutate(child, mutationRate);//mutasyona uğrat
             newPopulation.Add(child);
         }
         return newPopulation;
@@ -91,12 +92,12 @@ class Program
     static int[] Crossover(int[] parent1, int[] parent2, int n)
     {
         int[] child = new int[n];
-        int crossoverPoint = random.Next(1, n);
-        HashSet<int> genes = new HashSet<int>();
+        int crossoverPoint = random.Next(1, n);//rassal çaprazlama sayısı belirle
+        HashSet<int> genes = new HashSet<int>();//bu dizi sayesinde tekrar eden eleman almaz ve eşsiz çözümler elde ederiz
 
         for (int i = 0; i < crossoverPoint; i++)
         {
-            child[i] = parent1[i];
+            child[i] = parent1[i];//ebeveyn 1i yeni nesile atıyor
             genes.Add(parent1[i]);
         }
 
@@ -118,9 +119,9 @@ class Program
     // Bireyin genlerinde rastgele mutasyon uygulama
     static void Mutate(int[] individual, double mutationRate)
     {
-        for (int i = 0; i < individual.Length; i++)
+        for (int i = 0; i < individual.Length; i++)//her bir eleman için
         {
-            if (random.NextDouble() < mutationRate)
+            if (random.NextDouble() < mutationRate)//oluşturulan rassal oran mutasyon oranından küçükse mutasyona uğrat.
             {
                 int j = random.Next(individual.Length);
                 int temp = individual[i];
@@ -137,7 +138,7 @@ class Program
         {
             for (int j = i + 1; j < n; j++)
             {
-                if (Math.Abs(i - j) == Math.Abs(individual[i] - individual[j]))
+                if (Math.Abs(i - j) == Math.Abs(individual[i] - individual[j]))//tehdit olup olmadığını kontrol ediyor
                 {
                     return false; // Tehdit var!
                 }
@@ -156,7 +157,7 @@ class Program
             Console.Write(" |");
             for (int j = 0; j < n; j++)
             {
-                Console.Write(solution[j] == i ? "Q " : ". ");
+                Console.Write(solution[j] == i ? "Q " : ". ");//vezir varsa Q koy yoksa . koy
             }
             Console.Write("|");
             Console.WriteLine();
