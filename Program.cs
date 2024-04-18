@@ -1,138 +1,165 @@
 ﻿using System;
 using System.Collections.Generic;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-namespace GA_Vezir_Problemi
+
+class Program
 {
+    static Random random = new Random(); //random sayı oluşturmak için referans oluşturduk
 
-
-    class Program
+    static void Main()
     {
-        static int[] fitness(List<int[]> population)
+        int n = 8; // Satranç tahtası boyutu
+        int populationSize = 10000; // Popülasyon boyutu
+        double mutationRate = 0.01; // Mutasyon oranı, her bireyin mutasyona uğrama şansı
+        double crossoverRate = 0.6; // Çaprazlama oranı, yeni bireylerin çaprazlama ile oluşma şansı (PERMÜTASYON)
+        int desiredSolutionsCount = 92; // Bulunması gereken çözüm sayısı. (Tekrara girmemek için)
+        int iterasyon = 10000; // İzin verilen maksimum nesil (iterasyon) sayısı
+
+        List<int[]> population = InitializePopulation(n, populationSize);
+        List<int[]> solutions = new List<int[]>();
+        int generation = 0;
+
+        // Çözüm bulma süreci
+        while (solutions.Count < desiredSolutionsCount && generation < iterasyon)
         {
-            int[] fitness = new int[population.Count];
-            for (int i = 0; i < population.Count; i++)
+            List<int[]> newPopulation = NextGeneration(population, mutationRate, crossoverRate, n);
+            population = newPopulation;
+
+            foreach (var individual in population)
             {
-                int penalty = 0;
-                for (int j = 0; j < population[i].Length; j++)
+                if (IsSolution(individual, n) && !solutions.Any(sol => sol.SequenceEqual(individual)))
                 {
-                    for (int k = j + 1; k < population[i].Length; k++)
-                    {
-                        if (population[i][j] == population[i][k])
-                        {
-                            penalty++;
-                        }
-                        else if (Math.Abs(population[i][j] - population[i][k]) == Math.Abs(j - k))
-                        {
-                            penalty++;
-                        }
-                    }
-                }
-                fitness[i] = 28 - penalty;
-            }
-            return fitness;
-        }
-
-        static int[] selection(int[] fitness, int num_parents)
-        {
-            int[] parents = new int[num_parents];
-            for (int i = 0; i < num_parents; i++)
-            {
-                int max_fitness_idx = Array.IndexOf(fitness, fitness.Max());
-                parents[i] = max_fitness_idx;
-                fitness[max_fitness_idx] = -1;
-            }
-            return parents;
-        }
-
-        static List<int[]> crossover(List<int[]> parents, int offspring_size)
-        {
-            List<int[]> offspring = new List<int[]>();
-            Random rand = new Random();
-            for (int i = 0; i < offspring_size; i++)
-            {
-                int[] parent1 = parents[rand.Next(parents.Count)];
-                int[] parent2 = parents[rand.Next(parents.Count)];
-                int[] child = new int[parent1.Length];
-                int crossover_point = rand.Next(1, parent1.Length);
-                Array.Copy(parent1, child, crossover_point);
-                Array.Copy(parent2, crossover_point, child, crossover_point, parent2.Length - crossover_point);
-                offspring.Add(child);
-            }
-            return offspring;
-        }
-
-        static List<int[]> mutation(List<int[]> offspring, double mutation_rate)
-        {
-            Random rand = new Random();
-            for (int i = 0; i < offspring.Count; i++)
-            {
-                if (rand.NextDouble() < mutation_rate)
-                {
-                    int gene_idx1 = rand.Next(offspring[i].Length);
-                    int gene_idx2 = rand.Next(offspring[i].Length);
-                    int temp = offspring[i][gene_idx1];
-                    offspring[i][gene_idx1] = offspring[i][gene_idx2];
-                    offspring[i][gene_idx2] = temp;
+                    solutions.Add(individual);
                 }
             }
-            return offspring;
+
+            generation++;
         }
 
-        static int[] best_solution(List<int[]> population, int[] fitness)
+        // Çözümlerin yazdırılması
+        if (solutions.Any())
         {
-            int max_fitness_idx = Array.IndexOf(fitness, fitness.Max());
-            return population[max_fitness_idx];
-        }
-
-        static void Main(string[] args)
-        {
-            int population_size = 10;
-            double crossover_rate = 0.6;
-            double mutation_rate = 0.01;
-            int iterations = 10;
-
-            // Initial population
-            List<int[]> population = new List<int[]>();
-            Random rand = new Random();
-            for (int i = 0; i < population_size; i++)
+            Console.WriteLine($"Toplam {solutions.Count} çözüm bulundu, {generation} nesillerde:");
+            foreach (var solution in solutions)
             {
-                int[] individual = Enumerable.Range(1, 8).OrderBy(x => rand.Next()).ToArray();
-                population.Add(individual);
+                Console.WriteLine(" ------------------");
+                PrintBoard(solution);
+                Console.WriteLine(" ------------------");
+                Console.WriteLine();
             }
+        }
+        else
+        {
+            Console.WriteLine("Çözüm bulunamadı.");
+        }
+    }
 
-            for (int iter = 0; iter < iterations; iter++)
+    // Popülasyonun ilk başta rastgele oluşturulması
+    static List<int[]> InitializePopulation(int n, int size)
+    {
+        List<int[]> population = new List<int[]>();
+        for (int i = 0; i < size; i++)
+        {
+            int[] individual = Enumerable.Range(0, n).OrderBy(x => random.Next()).ToArray();
+            population.Add(individual);
+        }
+        return population;
+    }
+
+    // Bir nesilden sonraki nesli oluşturma
+    static List<int[]> NextGeneration(List<int[]> currentPopulation, double mutationRate, double crossoverRate, int n)
+    {
+        List<int[]> newPopulation = new List<int[]>();
+        while (newPopulation.Count < currentPopulation.Count)
+        {
+            int[] parent1 = SelectParent(currentPopulation);
+            int[] parent2 = SelectParent(currentPopulation);
+            int[] child = random.NextDouble() < crossoverRate ? Crossover(parent1, parent2, n) : random.NextDouble() < 0.5 ? parent1 : parent2;
+            Mutate(child, mutationRate);
+            newPopulation.Add(child);
+        }
+        return newPopulation;
+    }
+
+    // Ebeveyn seçimi
+    static int[] SelectParent(List<int[]> population)
+    {
+        return population[random.Next(population.Count)];
+    }
+
+    // İki ebeveyn arasında çaprazlama yaparak çocuk oluşturma
+    static int[] Crossover(int[] parent1, int[] parent2, int n)
+    {
+        int[] child = new int[n];
+        int crossoverPoint = random.Next(1, n);
+        HashSet<int> genes = new HashSet<int>();
+
+        for (int i = 0; i < crossoverPoint; i++)
+        {
+            child[i] = parent1[i];
+            genes.Add(parent1[i]);
+        }
+
+        int fillPoint = crossoverPoint;
+        for (int i = 0; i < n; i++) // parent2'den eksik genleri ekliyoruz
+        {
+            if (!genes.Contains(parent2[i]))
             {
-                int[] fitness_values = fitness(population);
-
-                // Select parents
-                int num_parents = (int)(population_size * crossover_rate);
-                int[] parents_idx = selection(fitness_values, num_parents);
-                List<int[]> parents = new List<int[]>();
-                foreach (int idx in parents_idx)
+                if (fillPoint < n)
                 {
-                    parents.Add(population[idx]);
+                    child[fillPoint] = parent2[i];
+                    fillPoint++;
                 }
-
-                // Crossover
-                int offspring_size = population_size - num_parents;
-                List<int[]> offspring = crossover(parents, offspring_size);
-
-                // Mutation
-                offspring = mutation(offspring, mutation_rate);
-
-                // New population
-                population.Clear();
-                population.AddRange(parents);
-                population.AddRange(offspring);
-
-                // Best solution
-                int[] best_sol = best_solution(population, fitness_values);
-                Console.WriteLine("Iteration {0}: Best solution = [{1}]", iter + 1, string.Join(", ", best_sol));
             }
         }
+        return child;
+    }
 
+    // Bireyin genlerinde rastgele mutasyon uygulama
+    static void Mutate(int[] individual, double mutationRate)
+    {
+        for (int i = 0; i < individual.Length; i++)
+        {
+            if (random.NextDouble() < mutationRate)
+            {
+                int j = random.Next(individual.Length);
+                int temp = individual[i];
+                individual[i] = individual[j];
+                individual[j] = temp;
+            }
+        }
+    }
 
+    // Bireyin çözüm olup olmadığını kontrol etme
+    static bool IsSolution(int[] individual, int n)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = i + 1; j < n; j++)
+            {
+                if (Math.Abs(i - j) == Math.Abs(individual[i] - individual[j]))
+                {
+                    return false; // Tehdit var!
+                }
+            }
+        }
+        return true; // Tehdit Yok
+    }
+
+    // Satranç tahtasını görsel olarak yazdırma
+    static void PrintBoard(int[] solution)
+    {
+        int n = solution.Length;
+
+        for (int i = 0; i < n; i++)
+        {
+            Console.Write(" |");
+            for (int j = 0; j < n; j++)
+            {
+                Console.Write(solution[j] == i ? "Q " : ". ");
+            }
+            Console.Write("|");
+            Console.WriteLine();
+        }
     }
 }
